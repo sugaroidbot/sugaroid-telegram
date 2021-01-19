@@ -98,7 +98,7 @@ def on_message(update, context):
     #     return
     global interrupt_local
 
-    if any((
+    if update.message.text is not None and any((
         update.message.text.startswith('@sugaroidbot'),
         update.message.text.startswith('!S')
     )):
