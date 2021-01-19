@@ -1,5 +1,4 @@
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.3.1/en_core_web_sm-2.3.1.tar.gz
-discord.py
 akinator.py
 python-dotenv
 https://github.com/srevinsaju/sugaroid/archive/7e388efb1d289117e51f54d2bea6ee96b142c829.tar.gz
@@ -10,6 +9,5 @@ psutil
 wikipedia-api
 python-telegram-bot
 chatterbot
-telegram
 mediawikiapi
 https://github.com/gunthercox/chatterbot-corpus/archive/master.tar.gz
