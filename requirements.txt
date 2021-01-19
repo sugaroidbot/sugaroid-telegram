@@ -8,7 +8,7 @@ freegames
 gunicorn
 psutil
 wikipedia-api
-telegram-python-bot
+python-telegram-bot
 chatterbot
 telegram
 mediawikiapi
