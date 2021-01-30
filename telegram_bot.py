@@ -98,7 +98,7 @@ def on_message(update, context):
     #     return
     global interrupt_local
 
-    if update.effective_message.chat_id not in [-497919820, -1001281270626]:
+    if update.effective_message.chat_id not in [-1001464483235, -1001281270626]:
         print("Message from invalid chat ID", update.effective_message.chat_id)
         return
 
