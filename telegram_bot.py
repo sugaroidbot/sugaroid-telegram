@@ -46,7 +46,7 @@ start_time = datetime.now()
 def update_sugaroid(update, context, branch="master"):
     # initiate and announce to the user of the upgrade
     context.bot.send_message(
-        update.effective_chat.id, "Updating my brain with new features :smile:"
+        update.effective_chat.id, "Updating my brain with new features 😄"
     )
 
     # execute pip3 install
@@ -80,7 +80,9 @@ def update_sugaroid(update, context, branch="master"):
     )
 
     context.bot.send_message(
-        update.effective_chat.id, "Update completed. :smile:, Restarting myself :zzz:"
+        update.effective_chat.id,
+        "Update completed. 😄, Restarting myself  💤",
+        parse_mode=ParseMode.MARKDOWN_V2
     )
     sys.exit(1)
 
@@ -131,6 +133,7 @@ def on_message(update, context):
                     update.effective_chat.id,
                     "I am sorry. I would not be able to update myself.\n"
                     "Seems like you do not have sufficient permissions",
+                    parse_mode=ParseMode.MARKDOWN_V2
                 )
             return
         elif "stop" in update.message.text and "learn" in update.message.text:
@@ -138,33 +141,44 @@ def on_message(update, context):
                 global interrupt_local
                 interrupt_local = False
                 context.bot.send_message(
-                    update.effective_chat.id, "InterruptAdapter terminated"
+                    update.effective_chat.id, "InterruptAdapter terminated",
+                    parse_mode=ParseMode.MARKDOWN_V2
                 )
             else:
-                context.effective_chat.id(
+                context.bot.sed_message(
                     update.effective_chat.id,
                     "I am sorry. I would not be able to update myself.\n"
                     "Seems like you do not have sufficient permissions",
+                    parse_mode=ParseMode.MARKDOWN_V2
                 )
             return
         lim = 4095
         try:
-            response = sg.parse(msg)
+            response = str(sg.parse(msg))
+            response = response.replace("-", "\-")
         except Exception as e:
             # some random error occured. Log it
             error_message = traceback.format_exc(chain=True)
             response = "```An unhandled exception occurred: " + error_message + "```"
         if len(str(response)) >= lim:
             response1 = str(response)[:lim] + "..."
-            context.bot.send_message(update.effective_chat.id, response1)
+            context.bot.send_message(
+                update.effective_chat.id, response1,
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
             if len(str(response)) >= (2 * lim):
                 response2 = str(response)[lim : 2 * lim] + "..."
-                context.bot.send_message(update.effective_chat.id, response2)
+                context.bot.send_message(
+                    update.effective_chat.id, response2,
+                    parse_mode=ParseMode.MARKDOWN_V2
+                )
 
                 if len(str(response)) >= (3 * lim):
                     print("skipping rest")
         else:
-            context.bot.send_message(update.effective_chat.id, str(response))
+            context.bot.send_message(
+                update.effective_chat.id, str(response),
+                parse_mode=ParseMode.MARKDOWN_V2)
             return
         return
 
@@ -181,7 +195,7 @@ def on_message(update, context):
             response = sg.parse(messages)
             print(response, "s" * 5)
             context.bot.send_message(update.effective_chat.id, str(response),
-                                     parse_mode=ParseMode.MARKDOWN_v2)
+                                     parse_mode=ParseMode.MARKDOWN_V2)
         return
 
 
