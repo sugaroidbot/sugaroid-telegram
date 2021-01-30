@@ -10,6 +10,7 @@ import traceback
 import psutil
 from telegram.ext import Updater
 from telegram import ChatAction
+from telegram.parsemode import ParseMode
 
 # import sugaroid_commands as scom
 from datetime import datetime
@@ -94,6 +95,11 @@ def on_message(update, context):
     #     return
     global interrupt_local
 
+
+    if update.effective_message.chat_id not in [-497919820, -1001464483235]:
+        print("Message from invalid chat ID", update.effective_message.chat_id)
+        return
+
     if (
         update.message is not None
         and update.message.text is not None
@@ -174,7 +180,8 @@ def on_message(update, context):
             sg.interrupt_ds()
             response = sg.parse(messages)
             print(response, "s" * 5)
-            context.bot.send_message(update.effective_chat.id, str(response))
+            context.bot.send_message(update.effective_chat.id, str(response),
+                                     parse_mode=ParseMode.MARKDOWN_v2)
         return
 
 
