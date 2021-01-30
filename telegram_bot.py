@@ -10,6 +10,7 @@ import traceback
 import psutil
 from telegram.ext import Updater
 from telegram import ChatAction
+from telegram import Bot
 from telegram.parsemode import ParseMode
 
 # import sugaroid_commands as scom
@@ -82,7 +83,7 @@ def update_sugaroid(update, context, branch="master"):
     context.bot.send_message(
         update.effective_chat.id,
         "Update completed. 😄, Restarting myself  💤",
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.HTML
     )
     sys.exit(1)
 
@@ -107,7 +108,7 @@ def on_message(update, context):
         and update.message.text is not None
         and any(
             (
-                update.message.text.startswith("@sugaroidbot"),
+                update.message.text.startswith("@"+context.bot.getMe().username),
                 update.message.text.startswith("!S"),
             )
         )
@@ -119,7 +120,7 @@ def on_message(update, context):
         )
 
         # clean the message
-        msg = update.message.text.replace("@sugaroidbot", "").replace("!S", "").strip()
+        msg = update.message.text.replace("@"+context.bot.getMe().username, "").replace("!S", "").strip()
 
         if "update" in msg and len(msg) <= 7:
             if message.from_user.username == "srevinsaju":
@@ -133,7 +134,7 @@ def on_message(update, context):
                     update.effective_chat.id,
                     "I am sorry. I would not be able to update myself.\n"
                     "Seems like you do not have sufficient permissions",
-                    parse_mode=ParseMode.MARKDOWN_V2
+                    parse_mode=ParseMode.HTML
                 )
             return
         elif "stop" in update.message.text and "learn" in update.message.text:
@@ -142,35 +143,37 @@ def on_message(update, context):
                 interrupt_local = False
                 context.bot.send_message(
                     update.effective_chat.id, "InterruptAdapter terminated",
-                    parse_mode=ParseMode.MARKDOWN_V2
+                    parse_mode=ParseMode.HTML
                 )
             else:
                 context.bot.sed_message(
                     update.effective_chat.id,
                     "I am sorry. I would not be able to update myself.\n"
                     "Seems like you do not have sufficient permissions",
-                    parse_mode=ParseMode.MARKDOWN_V2
+                    parse_mode=ParseMode.HTML
                 )
             return
         lim = 4095
         try:
             response = str(sg.parse(msg))
-            response = response.replace("-", "\-")
         except Exception as e:
             # some random error occured. Log it
             error_message = traceback.format_exc(chain=True)
-            response = "```An unhandled exception occurred: " + error_message + "```"
+            response = "<pre language=\"python\">" \
+                "An unhandled exception occurred: " + \
+                    error_message + "</pre>"
+
         if len(str(response)) >= lim:
             response1 = str(response)[:lim] + "..."
             context.bot.send_message(
                 update.effective_chat.id, response1,
-                parse_mode=ParseMode.MARKDOWN_V2
+                parse_mode=ParseMode.HTML
             )
             if len(str(response)) >= (2 * lim):
                 response2 = str(response)[lim : 2 * lim] + "..."
                 context.bot.send_message(
                     update.effective_chat.id, response2,
-                    parse_mode=ParseMode.MARKDOWN_V2
+                    parse_mode=ParseMode.HTML
                 )
 
                 if len(str(response)) >= (3 * lim):
@@ -178,7 +181,7 @@ def on_message(update, context):
         else:
             context.bot.send_message(
                 update.effective_chat.id, str(response),
-                parse_mode=ParseMode.MARKDOWN_V2)
+                parse_mode=ParseMode.HTML)
             return
         return
 
@@ -195,7 +198,7 @@ def on_message(update, context):
             response = sg.parse(messages)
             print(response, "s" * 5)
             context.bot.send_message(update.effective_chat.id, str(response),
-                                     parse_mode=ParseMode.MARKDOWN_V2)
+                                     parse_mode=ParseMode.HTML)
         return
 
 
