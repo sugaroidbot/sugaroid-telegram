@@ -183,7 +183,10 @@ def on_message(update, context):
                     print("skipping rest")
         else:
             context.bot.send_message(
-                update.effective_chat.id, str(response), parse_mode=ParseMode.HTML
+                update.effective_chat.id,
+                str(response),
+                parse_mode=ParseMode.HTML,
+                reply_to_message_id=update.message.message_id
             )
             return
         return
