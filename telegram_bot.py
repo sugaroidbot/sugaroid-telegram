@@ -43,7 +43,7 @@ dispatcher = updater.dispatcher
 interrupt_local = False
 start_time = datetime.now()
 
-message_length_limit = 1990
+message_length_limit = 4000
 
 
 def split_into_packets(response: str) -> list:
