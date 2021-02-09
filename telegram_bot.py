@@ -43,6 +43,20 @@ dispatcher = updater.dispatcher
 interrupt_local = False
 start_time = datetime.now()
 
+message_length_limit = 1990
+
+
+def split_into_packets(response: str) -> list:
+    messages = []
+    for i in range(0, len(response), message_length_limit):
+        messages.append(response[i : i + message_length_limit])
+
+    broken_messages = []
+    for message in messages:
+        broken_messages.extend(message.split("<br>"))
+
+    return broken_messages
+
 
 def update_sugaroid(update, context, branch="master"):
     # initiate and announce to the user of the upgrade
@@ -107,7 +121,7 @@ def on_message(update, context):
         and update.message.text is not None
         and any(
             (
-                update.message.text.startswith("@" + context.bot.getMe().username),
+                update.message.text.startswith(f"@{context.bot.getMe().username}"),
                 update.message.text.startswith("!S"),
             )
         )
@@ -120,7 +134,7 @@ def on_message(update, context):
 
         # clean the message
         msg = (
-            update.message.text.replace("@" + context.bot.getMe().username, "")
+            update.message.text.replace(f"@{context.bot.getMe().username}", "")
             .replace("!S", "")
             .strip()
         )
@@ -167,29 +181,10 @@ def on_message(update, context):
                 '<pre language="python">'
                 "An unhandled exception occurred: " + error_message + "</pre>"
             )
-
-        if len(str(response)) >= lim:
-            response1 = str(response)[:lim] + "..."
+        for packet in split_into_packets(str(response)):
             context.bot.send_message(
-                update.effective_chat.id, response1, parse_mode=ParseMode.HTML
+                update.effective_chat.id, packet, parse_mode=ParseMode.HTML
             )
-            if len(str(response)) >= (2 * lim):
-                response2 = str(response)[lim : 2 * lim] + "..."
-                context.bot.send_message(
-                    update.effective_chat.id, response2, parse_mode=ParseMode.HTML
-                )
-
-                if len(str(response)) >= (3 * lim):
-                    print("skipping rest")
-        else:
-            context.bot.send_message(
-                update.effective_chat.id,
-                str(response),
-                parse_mode=ParseMode.HTML,
-                reply_to_message_id=update.message.message_id
-            )
-            return
-        return
 
     elif interrupt_local:
         token = word_tokenize(update.message.text)
