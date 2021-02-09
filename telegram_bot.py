@@ -171,7 +171,6 @@ def on_message(update, context):
                     parse_mode=ParseMode.HTML,
                 )
             return
-        lim = 4095
         try:
             response = str(sg.parse(msg))
         except Exception as e:
