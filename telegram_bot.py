@@ -1,5 +1,6 @@
 # bot.py
 import importlib
+import logging
 import sys
 import os
 import random
@@ -7,9 +8,12 @@ import shlex
 import shutil
 import subprocess
 import traceback
+from typing import Tuple
+
 import psutil
+import telegram
 from telegram.ext import Updater
-from telegram import ChatAction
+from telegram import ChatAction, InputMediaPhoto
 from telegram import Bot
 from telegram.parsemode import ParseMode
 
@@ -46,16 +50,31 @@ start_time = datetime.now()
 message_length_limit = 4000
 
 
-def split_into_packets(response: str) -> list:
+def split_into_packets(response: str) -> Tuple[list, list]:
     messages = []
     for i in range(0, len(response), message_length_limit):
         messages.append(response[i : i + message_length_limit])
 
     broken_messages = []
     for message in messages:
-        broken_messages.extend(message.split("<br>"))
+        broken_messages.extend(message.split("<sugaroid:br>"))
 
-    return broken_messages
+    photos = []
+    text_messages = []
+    for message in broken_messages:
+        print(message, message.strip(), message.strip().startswith("<sugaroid:img>"))
+        if message.strip().startswith("<sugaroid:img>"):
+            # this is an image
+            img_src = message.strip().replace("<sugaroid:img>", "")
+            photo = InputMediaPhoto(img_src)
+            photos.append(photo)
+        else:
+            text_messages.append(message.strip())
+
+    photos_groups = []
+    for i in range(0, len(photos), 9):
+        photos_groups.append(photos[i : i + 9])
+    return text_messages, photos_groups
 
 
 def update_sugaroid(update, context, branch="master"):
@@ -106,7 +125,7 @@ def on_ready():
     os.chdir(os.path.dirname(sug.__file__))
 
 
-def on_message(update, context):
+def on_message(update, context: telegram.ext.CallbackContext):
     # if message.author == client.user:
     #    print("Ignoring message sent by another Sugaroid Instance")
     #     return
@@ -139,68 +158,35 @@ def on_message(update, context):
             .strip()
         )
 
-        if "update" in msg and len(msg) <= 7:
-            if message.from_user.username == "srevinsaju":
-                parts = msg.split()[-1]
-                if parts.lower() == "update":
-                    parts = "master"
-                update_sugaroid(message, updater)
-            else:
-                # no permissions
-                context.bot.send_message(
-                    update.effective_chat.id,
-                    "I am sorry. I would not be able to update myself.\n"
-                    "Seems like you do not have sufficient permissions",
-                    parse_mode=ParseMode.HTML,
-                )
-            return
-        elif "stop" in update.message.text and "learn" in update.message.text:
-            if str(message.from_user.username) == "srevinsaju":
-                global interrupt_local
-                interrupt_local = False
-                context.bot.send_message(
-                    update.effective_chat.id,
-                    "InterruptAdapter terminated",
-                    parse_mode=ParseMode.HTML,
-                )
-            else:
-                context.bot.sed_message(
-                    update.effective_chat.id,
-                    "I am sorry. I would not be able to update myself.\n"
-                    "Seems like you do not have sufficient permissions",
-                    parse_mode=ParseMode.HTML,
-                )
-            return
         try:
             response = str(sg.parse(msg))
-        except Exception as e:
+        except Exception:
             # some random error occured. Log it
             error_message = traceback.format_exc(chain=True)
             response = (
                 '<pre language="python">'
                 "An unhandled exception occurred: " + error_message + "</pre>"
             )
-        for packet in split_into_packets(str(response)):
+        packets, photos_group = split_into_packets(str(response))
+        for packet in packets:
             context.bot.send_message(
                 update.effective_chat.id, packet, parse_mode=ParseMode.HTML
             )
+        if photos_group:
+            logging.info("Found photos group")
+            for photos in photos_group:
+                if not photos:
+                    continue
+                context.bot.send_message(
+                    update.effective_chat.id, "Sending a few results! 🚀")
+                context.bot.send_chat_action(
+                    chat_id=update.effective_message.chat_id, action=ChatAction.UPLOAD_PHOTO
+                )
+                logging.info("Sending photo group")
+                time.sleep(1)
 
-    elif interrupt_local:
-        token = word_tokenize(update.message.text)
-        for i in range(len(token)):
-            if str(token[i]).startswith("@"):
-                token.pop(i)
-        if len(token) <= 5:
-            messages = " ".join(token)
-            author = message.author.mention
-            sg.append_author(author)
-            sg.interrupt_ds()
-            response = sg.parse(messages)
-            print(response, "s" * 5)
-            context.bot.send_message(
-                update.effective_chat.id, str(response), parse_mode=ParseMode.HTML
-            )
-        return
+                context.bot.send_media_group(update.effective_chat.id, photos, disable_notification=True)
+
 
 
 from telegram.ext import MessageHandler, Filters
