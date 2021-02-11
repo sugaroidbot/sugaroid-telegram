@@ -168,10 +168,21 @@ def on_message(update, context: telegram.ext.CallbackContext):
                 "An unhandled exception occurred: " + error_message + "</pre>"
             )
         packets, photos_group = split_into_packets(str(response))
-        for packet in packets:
-            context.bot.send_message(
-                update.effective_chat.id, packet, parse_mode=ParseMode.HTML
-            )
+        for i, packet in enumerate(packets):
+            if i == 0:
+                # always provide the reply-to
+                # for the first message
+                context.bot.send_message(
+                    update.effective_chat.id, packet,
+                    parse_mode=ParseMode.HTML,
+                    reply_to_message_id=update.message.message_id
+                )
+            else:
+                context.bot.send_message(
+                    update.effective_chat.id,
+                    packet,
+                    parse_mode=ParseMode.HTML
+                )
         if photos_group:
             logging.info("Found photos group")
             for photos in photos_group:
