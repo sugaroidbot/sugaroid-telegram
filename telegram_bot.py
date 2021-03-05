@@ -131,7 +131,11 @@ def on_message(update, context: telegram.ext.CallbackContext):
     #     return
     global interrupt_local
 
-    if update.effective_message.chat_id not in [-1001464483235, -1001281270626]:
+    if update.effective_message.chat_id not in [
+        -1001464483235,
+        -1001281270626,
+        -1001177507995,
+    ]:
         print("Message from invalid chat ID", update.effective_message.chat_id)
         return
 
@@ -173,15 +177,14 @@ def on_message(update, context: telegram.ext.CallbackContext):
                 # always provide the reply-to
                 # for the first message
                 context.bot.send_message(
-                    update.effective_chat.id, packet,
+                    update.effective_chat.id,
+                    packet,
                     parse_mode=ParseMode.HTML,
-                    reply_to_message_id=update.message.message_id
+                    reply_to_message_id=update.message.message_id,
                 )
             else:
                 context.bot.send_message(
-                    update.effective_chat.id,
-                    packet,
-                    parse_mode=ParseMode.HTML
+                    update.effective_chat.id, packet, parse_mode=ParseMode.HTML
                 )
         if photos_group:
             logging.info("Found photos group")
@@ -189,15 +192,18 @@ def on_message(update, context: telegram.ext.CallbackContext):
                 if not photos:
                     continue
                 context.bot.send_message(
-                    update.effective_chat.id, "Sending a few results! 🚀")
+                    update.effective_chat.id, "Sending a few results! 🚀"
+                )
                 context.bot.send_chat_action(
-                    chat_id=update.effective_message.chat_id, action=ChatAction.UPLOAD_PHOTO
+                    chat_id=update.effective_message.chat_id,
+                    action=ChatAction.UPLOAD_PHOTO,
                 )
                 logging.info("Sending photo group")
                 time.sleep(1)
 
-                context.bot.send_media_group(update.effective_chat.id, photos, disable_notification=True)
-
+                context.bot.send_media_group(
+                    update.effective_chat.id, photos, disable_notification=True
+                )
 
 
 from telegram.ext import MessageHandler, Filters
