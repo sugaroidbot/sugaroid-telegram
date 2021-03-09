@@ -13,7 +13,13 @@ from typing import Tuple
 import psutil
 import telegram
 from telegram.ext import Updater
-from telegram import ChatAction, InputMediaPhoto
+from telegram import (
+    ChatAction,
+    InputMediaPhoto,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext
 from telegram import Bot
 from telegram.parsemode import ParseMode
 
@@ -49,6 +55,14 @@ start_time = datetime.now()
 
 message_length_limit = 4000
 
+bool_keyboard = [
+    [
+        InlineKeyboardButton("Yes", callback_data="yes"),
+        InlineKeyboardButton("No", callback_data="no"),
+        InlineKeyboardButton("🤷", callback_data="idk"),
+    ]
+]
+
 
 def split_into_packets(response: str) -> Tuple[list, list]:
     messages = []
@@ -75,6 +89,64 @@ def split_into_packets(response: str) -> Tuple[list, list]:
     for i in range(0, len(photos), 9):
         photos_groups.append(photos[i : i + 9])
     return text_messages, photos_groups
+
+
+def parse_message_using_sugaroid(
+    msg: str, context: CallbackContext, update, is_button=False
+) -> None:
+    try:
+        response = str(sg.parse(msg))
+    except Exception:
+        # some random error occured. Log it
+        error_message = traceback.format_exc(chain=True)
+        response = (
+            '<pre language="python">'
+            "An unhandled exception occurred: " + error_message + "</pre>"
+        )
+    packets, photos_group = split_into_packets(str(response))
+    print(packets)
+    for i, packet in enumerate(packets):
+        if i == 0:
+            # always provide the reply-to
+            # for the first message
+            if "<sugaroid:yesno>" in packet:
+                packet = packet.replace("<sugaroid:yesno>", "")
+                reply_markup = InlineKeyboardMarkup(bool_keyboard)
+            else:
+                reply_markup = None
+            if not is_button:
+                reply_to_message_id = update.message.message_id
+            else:
+                reply_to_message_id = None
+            context.bot.send_message(
+                update.effective_chat.id,
+                packet,
+                parse_mode=ParseMode.HTML,
+                reply_to_message_id=reply_to_message_id,
+                reply_markup=reply_markup,
+            )
+        else:
+            context.bot.send_message(
+                update.effective_chat.id, packet, parse_mode=ParseMode.HTML
+            )
+    if photos_group:
+        logging.info("Found photos group")
+        for photos in photos_group:
+            if not photos:
+                continue
+            context.bot.send_message(
+                update.effective_chat.id, "Sending a few results! 🚀"
+            )
+            context.bot.send_chat_action(
+                chat_id=update.effective_message.chat_id,
+                action=ChatAction.UPLOAD_PHOTO,
+            )
+            logging.info("Sending photo group")
+            time.sleep(1)
+
+            context.bot.send_media_group(
+                update.effective_chat.id, photos, disable_notification=True
+            )
 
 
 def update_sugaroid(update, context, branch="master"):
@@ -125,6 +197,23 @@ def on_ready():
     os.chdir(os.path.dirname(sug.__file__))
 
 
+def on_akinator_yesno(update, context: telegram.ext.CallbackContext) -> None:
+    query = update.callback_query
+
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    query.answer()
+
+    query.edit_message_text(
+        text=f"{query.message.text}\n<i><b>{query.from_user.first_name}</b> selected option: {query.data}</i>",
+        parse_mode=ParseMode.HTML,
+    )
+    context.bot.send_chat_action(
+        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING
+    )
+    parse_message_using_sugaroid(query.data, context, update, is_button=True)
+
+
 def on_message(update, context: telegram.ext.CallbackContext):
     # if message.author == client.user:
     #    print("Ignoring message sent by another Sugaroid Instance")
@@ -161,54 +250,13 @@ def on_message(update, context: telegram.ext.CallbackContext):
             .replace("!S", "")
             .strip()
         )
-
-        try:
-            response = str(sg.parse(msg))
-        except Exception:
-            # some random error occured. Log it
-            error_message = traceback.format_exc(chain=True)
-            response = (
-                '<pre language="python">'
-                "An unhandled exception occurred: " + error_message + "</pre>"
-            )
-        packets, photos_group = split_into_packets(str(response))
-        for i, packet in enumerate(packets):
-            if i == 0:
-                # always provide the reply-to
-                # for the first message
-                context.bot.send_message(
-                    update.effective_chat.id,
-                    packet,
-                    parse_mode=ParseMode.HTML,
-                    reply_to_message_id=update.message.message_id,
-                )
-            else:
-                context.bot.send_message(
-                    update.effective_chat.id, packet, parse_mode=ParseMode.HTML
-                )
-        if photos_group:
-            logging.info("Found photos group")
-            for photos in photos_group:
-                if not photos:
-                    continue
-                context.bot.send_message(
-                    update.effective_chat.id, "Sending a few results! 🚀"
-                )
-                context.bot.send_chat_action(
-                    chat_id=update.effective_message.chat_id,
-                    action=ChatAction.UPLOAD_PHOTO,
-                )
-                logging.info("Sending photo group")
-                time.sleep(1)
-
-                context.bot.send_media_group(
-                    update.effective_chat.id, photos, disable_notification=True
-                )
+        parse_message_using_sugaroid(msg, context, update)
 
 
 from telegram.ext import MessageHandler, Filters
 
 on_message_handler = MessageHandler(Filters.text & (~Filters.command), on_message)
 dispatcher.add_handler(on_message_handler)
+dispatcher.add_handler(CallbackQueryHandler(on_akinator_yesno))
 updater.start_polling()
 updater.idle()
