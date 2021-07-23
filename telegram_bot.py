@@ -224,6 +224,7 @@ def on_message(update, context: telegram.ext.CallbackContext):
         -1001464483235,
         -1001281270626,
         -1001177507995,
+        -435464711,
     ]:
         print("Message from invalid chat ID", update.effective_message.chat_id)
         return
